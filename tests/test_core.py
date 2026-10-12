@@ -1,14 +1,3 @@
-"""
-test_core.py — quick sanity checks (run:  python -m pytest -q  or  python tests/test_core.py)
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — SMOTE/ADASYN balance + interpolation checks, prob-kNN
-                       reduces to kNN at lambda=0, SGD-LR agrees with sklearn,
-                       strict protocol keeps real fraud rate in test folds,
-                       every model fits and predicts.
-"""
-
 __version__ = "1.0.0"
 
 import os
@@ -18,12 +7,12 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import config  # noqa: E402
-from src.data_loader import make_synthetic, prepare_frame  # noqa: E402
-from src.experiment import evaluate_on_folds, prepare_folds  # noqa: E402
-from src.models import (LogisticRegressionSGD, ProbabilityKNN,  # noqa: E402
+import config  
+from src.data_loader import make_synthetic, prepare_frame  
+from src.experiment import evaluate_on_folds, prepare_folds  
+from src.models import (LogisticRegressionSGD, ProbabilityKNN,  
                         make_model)
-from src.resampling import ADASYN, SMOTE  # noqa: E402
+from src.resampling import ADASYN, SMOTE  
 
 
 def _toy(n=2000, rate=0.05, d=6, seed=0):
@@ -37,10 +26,10 @@ def test_smote_balances_and_interpolates():
     X, y = _toy()
     Xr, yr = SMOTE(5, random_state=1).fit_resample(X, y)
     assert (yr == 1).sum() == (yr == 0).sum()
-    assert np.allclose(Xr[:len(X)], X)                    # originals untouched
+    assert np.allclose(Xr[:len(X)], X)                   
     syn = Xr[len(X):]
     lo, hi = X[y == 1].min(0), X[y == 1].max(0)
-    assert np.all(syn >= lo - 1e-9) and np.all(syn <= hi + 1e-9)  # inside minority hull box
+    assert np.all(syn >= lo - 1e-9) and np.all(syn <= hi + 1e-9) 
 
 
 def test_adasyn_roughly_balances():
@@ -81,8 +70,8 @@ def test_strict_protocol_keeps_real_rate_in_test_folds():
     X, y, _ = prepare_frame(make_synthetic(4000))
     folds = prepare_folds(X, y, "smote", "strict", n_folds=3)
     for f in folds:
-        assert abs(f.y_test.mean() - y.mean()) < 0.01   # test fold not resampled
-        assert abs(f.y_train.mean() - 0.5) < 1e-9       # training fold balanced
+        assert abs(f.y_test.mean() - y.mean()) < 0.01  
+        assert abs(f.y_train.mean() - 0.5) < 1e-9       
 
 
 def test_every_model_runs():

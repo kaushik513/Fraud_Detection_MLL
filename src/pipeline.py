@@ -1,12 +1,3 @@
-"""
-pipeline.py — end-to-end study: split → (per sampling) CV folds → baseline +
-random search + sensitivity per model → hold-out comparison → plots + report.
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — first full pipeline; shared by main.py (CLI) and gui.py.
-"""
-
 __version__ = "1.0.0"
 
 import json
@@ -93,7 +84,6 @@ def run_study(X, y, info, models=None, samplings=None, protocol=config.DEFAULT_P
                     if p:
                         plot_paths.append(p)
 
-            # Hold-out comparison: baseline vs best configuration.
             base_rec = records[0]
             for variant, rec in [("baseline", base_rec), ("tuned", best)]:
                 hm = evaluate_holdout(X_dev, y_dev, X_test, y_test, model,

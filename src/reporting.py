@@ -1,17 +1,3 @@
-"""
-reporting.py — result tables, comparison plots and an auto-generated summary.
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — baseline-vs-tuned bar charts (F1 / recall / precision),
-                       training-time comparison, sensitivity curves, hold-out
-                       confusion matrices, PR + ROC curves, SGD loss curve,
-                       Markdown summary.
-
-Lab-manual links: Week 2 (matplotlib bar/line plots), Week 4 (confusion matrix,
-PR curve, ROC curve), Week 6 (error/log-loss vs iteration plot).
-"""
-
 __version__ = "1.0.0"
 
 import os
@@ -37,7 +23,6 @@ def _save(fig, out_dir, name):
 
 
 def plot_baseline_vs_tuned(final_df, out_dir, source="holdout"):
-    """One panel per sampling setting; grouped bars per model."""
     paths = []
     for metric in ["f1", "recall", "precision"]:
         samplings = list(final_df["sampling"].unique())
@@ -68,8 +53,6 @@ def plot_baseline_vs_tuned(final_df, out_dir, source="holdout"):
 def plot_times(final_df, out_dir):
     df = final_df.copy()
     df["label"] = df["model"].map(config.MODEL_LABELS) + " / " + df["sampling"]
-    # kNN-type models are "lazy": almost no training cost, all the work happens at
-    # prediction time — so total = fit + predict is the fair efficiency measure.
     df["total_time"] = df["cv_fit_time_mean"] + df["cv_predict_time_mean"]
     piv = df.pivot_table(index="label", columns="variant", values="total_time")
     piv = piv.sort_values(piv.columns[0])
@@ -109,7 +92,6 @@ def plot_sensitivity(sens_rows, model, sampling, out_dir):
 
 
 def plot_confusion_grid(holdout_runs, out_dir, sampling):
-    """holdout_runs: list of (model, variant, metrics-dict) for one sampling."""
     runs = [r for r in holdout_runs if r[1] == "tuned"]
     if not runs:
         return None
@@ -170,7 +152,6 @@ def plot_sgd_loss(model, out_dir, sampling):
 
 
 def write_summary(final_df, info, settings, out_path):
-    """Markdown summary that can be pasted into the Results section of the report."""
     lines = [
         "# Experiment summary",
         "",

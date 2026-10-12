@@ -30,7 +30,6 @@ PAD = {"padx": 6, "pady": 4}
 
 
 def open_path(path):
-    """Open a file or folder with the operating system's default app."""
     if not os.path.exists(path):
         messagebox.showwarning("Not found", f"{path} does not exist yet.")
         return
@@ -43,7 +42,6 @@ def open_path(path):
 
 
 class ImageViewer(ttk.Frame):
-    """Listbox of PNG files + a scrollable canvas that shows the selected one."""
 
     def __init__(self, master):
         super().__init__(master)
@@ -410,7 +408,6 @@ class FraudApp(tk.Tk):
         self.worker.start()
 
     def _log(self, msg):
-        """Called from the worker thread — only enqueue, never touch widgets."""
         self.queue.put(("log", str(msg)))
 
     def _poll_queue(self):

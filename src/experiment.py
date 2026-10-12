@@ -1,24 +1,3 @@
-"""
-experiment.py — cross-validation and hold-out evaluation under a fixed protocol.
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — prepared (cached) CV folds per sampling setting so every
-                       configuration is scored on identical data; "strict" and
-                       "paper" protocols; hold-out evaluation; fit/predict timing.
-
-Key design choice — preventing data leakage
--------------------------------------------
-In the "strict" protocol each fold does:
-    fit scaler + one-hot encoder on the training fold   (Week 3 / Week 5 practice)
-    oversample the training fold only (SMOTE / ADASYN)
-    train the model, then test on the untouched fold (real ~1.7 % fraud rate)
-Oversampling before splitting lets synthetic copies of a test-fold fraud case
-leak into training, inflating recall/precision. The "paper" protocol does
-exactly that, on purpose, so the reproduction can be compared with published
-numbers and the size of the leakage effect can be reported.
-"""
-
 __version__ = "1.0.0"
 
 import time
@@ -44,9 +23,6 @@ class Fold:
 def prepare_folds(X, y, sampling, protocol=config.DEFAULT_PROTOCOL,
                   n_folds=config.CV_FOLDS, seed=config.RANDOM_STATE,
                   k=config.SMOTE_K):
-    """Build the K preprocessed (and, if requested, resampled) folds once.
-    Every model / hyperparameter configuration is then evaluated on these
-    same arrays, so differences come from the hyperparameters alone."""
     y = np.asarray(y)
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
     folds = []
@@ -72,8 +48,6 @@ def prepare_folds(X, y, sampling, protocol=config.DEFAULT_PROTOCOL,
 
 def evaluate_on_folds(folds, model_name, params=None, seed=config.RANDOM_STATE,
                       keep_predictions=False):
-    """Train/test `model_name` with `params` on every fold.
-    Returns aggregated metrics (+ pooled out-of-fold scores if requested)."""
     per_fold, all_y, all_s, all_p = [], [], [], []
     for f in folds:
         model = make_model(model_name, params, seed)
@@ -99,8 +73,6 @@ def evaluate_on_folds(folds, model_name, params=None, seed=config.RANDOM_STATE,
 
 def evaluate_holdout(X_dev, y_dev, X_test, y_test, model_name, params, sampling,
                      seed=config.RANDOM_STATE, k=config.SMOTE_K):
-    """Final, unbiased check: fit preprocessing + resampling + model on the whole
-    development set, score once on the never-touched hold-out set."""
     prep = build_preprocessor(X_dev).fit(X_dev)
     Xd, Xt = prep.transform(X_dev), prep.transform(X_test)
     Xd, yd = get_sampler(sampling, seed, k).fit_resample(Xd, np.asarray(y_dev))

@@ -1,20 +1,3 @@
-"""
-main.py — command-line entry point.
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — eda / run / both commands, synthetic demo switch,
-                       model / sampling / protocol / n-iter options.
-
-Examples
---------
-  python main.py eda  --data data/credit_card.csv
-  python main.py run  --data data/credit_card.csv --n-iter 12
-  python main.py run  --data data/credit_card.csv --models knn prob_knn xgboost \
-                      --samplings smote adasyn --protocol paper
-  python main.py all  --synthetic --n-iter 3          # quick demo, no CSV needed
-"""
-
 __version__ = "1.0.0"
 
 import argparse
@@ -24,10 +7,10 @@ import warnings
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import config  # noqa: E402
-from src.data_loader import load_csv, make_synthetic, prepare_frame  # noqa: E402
-from src.eda import run_eda  # noqa: E402
-from src.pipeline import run_study  # noqa: E402
+import config  
+from src.data_loader import load_csv, make_synthetic, prepare_frame
+from src.eda import run_eda  
+from src.pipeline import run_study 
 
 
 def load_data(args):

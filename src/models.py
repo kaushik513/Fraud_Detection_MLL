@@ -1,24 +1,3 @@
-"""
-models.py — model factory, the probability-based kNN, and a from-scratch SGD
-logistic regression.
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — factory for LR / kNN / SVM / XGBoost / probability-based
-                       kNN (+ Naive Bayes, CART, SGD-LR extensions); XGBoost
-                       fallback to sklearn HistGradientBoosting when the
-                       xgboost package is missing; stratified-subsampled SVC.
-
-Lab-manual links:
-  Week 5  Logistic Regression (sigmoid, threshold 0.5, sklearn LogisticRegression)
-  Week 6  Cost functions: binary cross-entropy / log loss, SGD update
-          b <- b - alpha * (prediction - y) * x  → LogisticRegressionSGD
-  Week 7  Naive Bayes (GaussianNB for continuous data)
-  Week 8  kNN: choice of k, Euclidean / Manhattan / Minkowski distance
-  Week 9  CART (Gini) vs C4.5-style (entropy / information gain) trees, max_depth
-  Week 12 SVM: kernels (linear, poly, rbf, sigmoid), C, soft margin, hinge loss
-"""
-
 __version__ = "1.0.0"
 
 import numpy as np
@@ -38,31 +17,13 @@ _SKLEARN_GE_18 = tuple(int(x) for x in sklearn.__version__.split(".")[:2]) >= (1
 try:
     from xgboost import XGBClassifier
     XGB_BACKEND = "xgboost"
-except Exception:  # package not installed
+except Exception:  
     XGBClassifier = None
     XGB_BACKEND = "sklearn-HistGradientBoosting (fallback: pip install xgboost)"
 
 
-# ---------------------------------------------------------------------------
 # Proposed method of the reference paper
-# ---------------------------------------------------------------------------
 class ProbabilityKNN(BaseEstimator, ClassifierMixin):
-    """Probability-based kNN using Logistic-Regression probabilities [1, §3.2.5].
-
-    The reference paper augments kNN's similarity with the fraud probability
-    estimated by logistic regression. Our implementation (the paper's exact
-    formula could not be retrieved — see PROJECT_NOTES.md) uses
-
-        d(x, z) = ( (1/F) * sum_i |x_i - z_i|^p  +  lambda^p * |P(x) - P(z)|^p )^(1/p)
-
-    where P(.) = LR's P(fraud | features), F = number of features and
-    lambda = `prob_weight`. Dividing the feature term by F puts it on the scale
-    of an *average* feature, so lambda = 1 makes the LR probability count as much
-    as a typical feature; lambda = 0 recovers ordinary kNN (useful sanity check).
-
-    Implemented by rescaling X by F^(-1/p) and appending lambda * P(x) as an extra
-    column, so sklearn's fast neighbour search is reused unchanged.
-    """
 
     def __init__(self, n_neighbors=5, prob_weight=1.0, lr_C=1.0, p=2):
         self.n_neighbors = n_neighbors
@@ -92,19 +53,7 @@ class ProbabilityKNN(BaseEstimator, ClassifierMixin):
         return self.knn_.predict_proba(self._augment(X))
 
 
-# ---------------------------------------------------------------------------
-# Week 5 / Week 6: logistic regression trained with mini-batch SGD, from scratch
-# ---------------------------------------------------------------------------
 class LogisticRegressionSGD(BaseEstimator, ClassifierMixin):
-    """Binary logistic regression minimising log loss with mini-batch SGD.
-
-        z = Xw + b,  p = sigmoid(z)
-        loss = -mean( y log p + (1-y) log(1-p) ) + (l2/2)||w||^2
-        grad_w = X^T (p - y) / m + l2 * w,  grad_b = mean(p - y)
-
-    `loss_history_` stores the training log loss after each epoch so the
-    error-vs-iteration curve from the Week-6 exercises can be plotted.
-    """
 
     def __init__(self, learning_rate=0.05, epochs=30, batch_size=256, l2=0.0,
                  random_state=config.RANDOM_STATE):
@@ -150,9 +99,6 @@ class LogisticRegressionSGD(BaseEstimator, ClassifierMixin):
         return (self.predict_proba(X)[:, 1] >= 0.5).astype(int)
 
 
-# ---------------------------------------------------------------------------
-# SVC with a training-size cap (see config.SVM_MAX_TRAIN)
-# ---------------------------------------------------------------------------
 class SubsampledSVC(BaseEstimator, ClassifierMixin):
     def __init__(self, kernel="rbf", C=1.0, gamma="scale", tol=1e-3,
                  class_weight=None, max_train=config.SVM_MAX_TRAIN,
@@ -172,7 +118,7 @@ class SubsampledSVC(BaseEstimator, ClassifierMixin):
         if self.max_train and len(y) > self.max_train:
             rng = np.random.default_rng(self.random_state)
             keep = []
-            for cls in np.unique(y):           # stratified: keep class ratio
+            for cls in np.unique(y):           
                 idx = np.flatnonzero(y == cls)
                 n_keep = max(1, int(round(len(idx) * self.max_train / len(y))))
                 keep.append(rng.choice(idx, n_keep, replace=False))
@@ -193,19 +139,13 @@ class SubsampledSVC(BaseEstimator, ClassifierMixin):
         return self.svc_.decision_function(X)
 
 
-# ---------------------------------------------------------------------------
 # Factory
-# ---------------------------------------------------------------------------
 def make_model(name, params=None, seed=config.RANDOM_STATE):
-    """Instantiate model `name` with hyperparameters `params`
-    (defaults to the baseline in config.BASELINE_PARAMS)."""
     p = dict(config.BASELINE_PARAMS[name])
     if params:
         p.update(params)
 
     if name == "logreg":
-        # scikit-learn >= 1.8 deprecates `penalty` in favour of `l1_ratio`;
-        # config keeps the readable 'l1'/'l2' names and we translate here.
         if _SKLEARN_GE_18 and "penalty" in p:
             p["l1_ratio"] = {"l1": 1.0, "l2": 0.0}[p.pop("penalty")]
         return LogisticRegression(random_state=seed, **p)
@@ -217,7 +157,6 @@ def make_model(name, params=None, seed=config.RANDOM_STATE):
         if XGBClassifier is not None:
             return XGBClassifier(eval_metric="logloss", tree_method="hist",
                                  n_jobs=-1, random_state=seed, **p)
-        # Fallback keeps the same knobs where sklearn has an equivalent.
         return HistGradientBoostingClassifier(
             max_iter=p["n_estimators"], max_depth=p["max_depth"],
             learning_rate=p["learning_rate"],
@@ -237,7 +176,6 @@ def make_model(name, params=None, seed=config.RANDOM_STATE):
 
 
 def positive_scores(model, X):
-    """Continuous fraud score for ROC / PR curves."""
     if hasattr(model, "predict_proba"):
         try:
             return model.predict_proba(X)[:, 1]

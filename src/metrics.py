@@ -1,17 +1,3 @@
-"""
-metrics.py — evaluation metrics with fraud (class 1) as the positive class.
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — precision, recall, F1, accuracy, specificity, ROC-AUC,
-                       PR-AUC (average precision), confusion-matrix counts.
-
-Lab-manual link: Week 4 "Machine Learning Model evaluation metrics" —
-confusion matrix, accuracy (and why it misleads under class imbalance),
-precision, recall/sensitivity, specificity, F1, PR curve vs ROC curve
-(PR is preferred when the positive class is rare). Week 6: log loss.
-"""
-
 __version__ = "1.0.0"
 
 import numpy as np
@@ -42,7 +28,6 @@ def compute_metrics(y_true, y_pred, scores=None):
 
 
 def aggregate(fold_metrics):
-    """Mean and standard deviation across CV folds."""
     agg = {}
     for k in METRIC_KEYS + ["fit_time", "predict_time"]:
         vals = np.array([m[k] for m in fold_metrics], dtype=float)

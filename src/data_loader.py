@@ -1,17 +1,3 @@
-"""
-data_loader.py — load the credit-card dataset (or a synthetic stand-in).
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — CSV loading with target/ID handling, basic cleaning
-                       (duplicates, missing-value imputation), stratified
-                       hold-out split, synthetic demo dataset.
-
-Lab-manual links: Week 2 (pandas DataFrames, read_csv, drop), Week 3
-(missing-value handling: dropping / numerical median imputation /
-categorical mode imputation, train_test_split with stratify).
-"""
-
 __version__ = "1.0.0"
 
 import numpy as np
@@ -22,13 +8,6 @@ import config
 
 
 def load_csv(path, target=config.TARGET_COLUMN):
-    """Read the dataset and return (X, y, info).
-
-    * ID-like columns are dropped (they carry no signal and break kNN distances).
-    * Duplicate rows are removed.
-    * Missing values: numeric -> median, categorical -> most frequent value
-      (exactly the two imputation recipes in the Week-3 manual).
-    """
     df = pd.read_csv(path)
     return prepare_frame(df, target)
 
@@ -77,8 +56,6 @@ def prepare_frame(df, target=config.TARGET_COLUMN):
 
 
 def categorical_columns(X):
-    """Non-numeric (text) columns are treated as categorical and one-hot encoded.
-    0/1 flag columns are already numeric and are left as they are."""
     return [c for c in X.columns if not pd.api.types.is_numeric_dtype(X[c])]
 
 
@@ -87,17 +64,10 @@ def numeric_columns(X):
 
 
 def holdout_split(X, y, fraction=config.HOLDOUT_FRACTION, seed=config.RANDOM_STATE):
-    """Stratified split so the 1-2 % fraud rate is preserved in both parts."""
     return train_test_split(X, y, test_size=fraction, stratify=y, random_state=seed)
 
 
 def make_synthetic(n=25134, fraud_rate=420 / 25134, seed=config.RANDOM_STATE):
-    """Synthetic stand-in that mimics the schema of the reference dataset
-    (18 features + Target, ~1.7 % positives) so the full pipeline and GUI can be
-    demonstrated before the real CSV is downloaded.
-
-    NOT REAL DATA — never report numbers produced from it.
-    """
     rng = np.random.default_rng(seed)
     y = (rng.random(n) < fraud_rate).astype(int)
 
@@ -113,8 +83,6 @@ def make_synthetic(n=25134, fraud_rate=420 / 25134, seed=config.RANDOM_STATE):
                          np.clip(rng.exponential(7, n) * (1 - 0.4 * y), 0.1, 43)).round(2)
     income = np.round(np.exp(rng.normal(12.0, 0.45, n) - 0.25 * y), -2)
     acct = np.clip(rng.normal(27, 16, n) - 12 * y, 0, 60).round()
-    # A non-linear pocket: a share of fraud cases are young applicants with very
-    # new accounts (an interaction no single feature captures on its own).
     pocket = (y == 1) & (rng.random(n) < 0.35)
     age[pocket] = rng.uniform(21, 29, pocket.sum()).round(1)
     acct[pocket] = rng.integers(0, 6, pocket.sum())

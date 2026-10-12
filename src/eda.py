@@ -1,21 +1,3 @@
-"""
-eda.py — exploratory data analysis: distributions, categorical relationships,
-correlations, outliers, PCA view and a k-means clustering view.
-
-Version: 1.0.0
-Changelog:
-  1.0.0 (2026-10-10) — class balance, histograms (sqrt(n) bin rule), fraud rate
-                       per category, correlation heatmap, IQR / 3-sigma outlier
-                       table + boxplots, PCA scatter + explained variance,
-                       k-means elbow + fraud rate per cluster.
-
-Lab-manual links:
-  Week 2  Matplotlib bar / histogram / scatter plots; number of bins = sqrt(n)
-  Week 3  Outlier identification with lower/upper limits (std-dev method)
-  Week 3 (PCA additional) StandardScaler + PCA, 2-D PCA scatter, explained variance
-  Week 10 K-means (k-means++ init), SSE / elbow method
-"""
-
 __version__ = "1.0.0"
 
 import json
@@ -52,7 +34,6 @@ def run_eda(X, y, out_dir, log=print, sample_for_heavy=6000):
     nums, cats = numeric_columns(X), categorical_columns(X)
     paths, summary = [], {}
 
-    # 1. class balance --------------------------------------------------------
     counts = pd.Series(y).value_counts().sort_index()
     fig, ax = plt.subplots(figsize=(5, 4))
     ax.bar(["Legitimate (0)", "Fraud (1)"], counts.values, color=[LEGIT_C, FRAUD_C])
@@ -64,7 +45,6 @@ def run_eda(X, y, out_dir, log=print, sample_for_heavy=6000):
     summary["class_counts"] = {int(k): int(v) for k, v in counts.items()}
     log("  class distribution done")
 
-    # 2. numeric distributions by class (bins = sqrt(n), Week-2 rule) ---------
     bins = int(np.sqrt(len(df)))
     cols = 3
     rows = int(np.ceil(len(nums) / cols)) or 1
@@ -82,7 +62,6 @@ def run_eda(X, y, out_dir, log=print, sample_for_heavy=6000):
     paths.append(_save(fig, out_dir, "02_numeric_histograms.png"))
     log("  histograms done")
 
-    # 3. categorical relationships: fraud rate per category -------------------
     if cats:
         rows = int(np.ceil(len(cats) / 2))
         fig, axes = plt.subplots(rows, 2, figsize=(12, 3.4 * rows))
@@ -103,7 +82,6 @@ def run_eda(X, y, out_dir, log=print, sample_for_heavy=6000):
         summary["categorical_fraud_rates"] = cat_tables
     log("  categorical relationships done")
 
-    # 4. correlation heatmap (numeric + target) -------------------------------
     corr = df[nums + ["Target"]].corr()
     fig, ax = plt.subplots(figsize=(0.55 * len(corr) + 3, 0.5 * len(corr) + 2.5))
     im = ax.imshow(corr.values, cmap="coolwarm", vmin=-1, vmax=1)
@@ -122,11 +100,10 @@ def run_eda(X, y, out_dir, log=print, sample_for_heavy=6000):
                                           .round(4).to_dict())
     log("  correlations done")
 
-    # 5. outliers: IQR rule and 3-sigma rule ----------------------------------
     rows_out = []
     for c in nums:
         s = df[c]
-        if s.nunique() <= 2:          # binary flags are not "outliers"
+        if s.nunique() <= 2:
             continue
         q1, q3 = s.quantile([0.25, 0.75])
         lo, hi = q1 - 1.5 * (q3 - q1), q3 + 1.5 * (q3 - q1)
@@ -152,7 +129,6 @@ def run_eda(X, y, out_dir, log=print, sample_for_heavy=6000):
     summary["outliers"] = rows_out
     log("  outliers done")
 
-    # Heavy steps run on a stratified-ish random sample to stay fast.
     rng = np.random.default_rng(config.RANDOM_STATE)
     idx = np.arange(len(df))
     if len(idx) > sample_for_heavy:
@@ -162,7 +138,6 @@ def run_eda(X, y, out_dir, log=print, sample_for_heavy=6000):
     Xs, ys = X.iloc[idx], y[idx]
     Z = build_preprocessor(Xs).fit_transform(Xs)
 
-    # 6. PCA -------------------------------------------------------------------
     pca = PCA().fit(Z)
     Z2 = pca.transform(Z)[:, :2]
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
@@ -183,16 +158,13 @@ def run_eda(X, y, out_dir, log=print, sample_for_heavy=6000):
     summary["encoded_feature_count"] = int(Z.shape[1])
     log("  PCA done")
 
-    # 7. k-means: elbow + fraud concentration per cluster ----------------------
     ks, sse = list(range(1, 11)), []
     for k in ks:
         sse.append(KMeans(n_clusters=k, init="k-means++", n_init=5,
                           random_state=config.RANDOM_STATE).fit(Z).inertia_)
-    # elbow = point furthest from the straight line joining the first and last
-    # points of the (min-max normalised) k-vs-SSE curve
     kn = (np.array(ks) - ks[0]) / (ks[-1] - ks[0])
     sn = (np.array(sse) - min(sse)) / (max(sse) - min(sse) + 1e-12)
-    dists = np.abs(sn - (1 - kn)) / np.sqrt(2)   # line from (0,1) to (1,0)
+    dists = np.abs(sn - (1 - kn)) / np.sqrt(2)   
     k_best = ks[int(np.argmax(dists))]
     labels = KMeans(n_clusters=k_best, init="k-means++", n_init=10,
                     random_state=config.RANDOM_STATE).fit_predict(Z)
