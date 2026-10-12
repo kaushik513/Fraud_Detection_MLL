@@ -1,0 +1,6 @@
+# .gitignore — v1.0.0 (2026-10-10)
+.venv/
+__pycache__/
+*.pyc
+results/
+data/*.csv

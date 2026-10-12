@@ -1,0 +1,13 @@
+# requirements.txt — v1.0.0 (2026-10-10): initial dependency list
+# Python 3.10+ recommended. tkinter ships with the python.org installers
+# (Linux: sudo apt install python3-tk).
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.4
+matplotlib>=3.9
+scipy>=1.10
+xgboost>=2.0
+# optional — only used to cross-check the from-scratch SMOTE in tests/test_core.py
+imbalanced-learn>=0.12
+# optional — test runner
+pytest>=7
